@@ -6,6 +6,8 @@
 *.jpg
 *.jpeg
 
+*.iml
+
 # 🚫 Output / Generated Files
 output/
 out/

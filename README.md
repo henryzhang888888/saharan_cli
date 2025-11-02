@@ -15,6 +15,11 @@ add the following line
 ```bash
 OPENAI_API_KEY=your_key_here
 ```
+If you want to run google nano banana image module, please also add
+```bash
+GEMINI_API_KEY=you_key_here
+```
+
 run
 ```bash
 source .env

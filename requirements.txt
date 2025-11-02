@@ -10,4 +10,5 @@ pathlib
 slugify
 Pillow
 click
+google-genai
 
