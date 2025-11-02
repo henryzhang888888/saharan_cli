@@ -10,6 +10,15 @@ It takes in a product image, brand logo, and product details, then produces opti
 - **Python 3.10+** installed
 - **OpenAI API key** set in your environment (e.g. `export OPENAI_API_KEY=your_key_here`)
 
+Or create a .env under your dev folder
+add the following line
+```bash
+OPENAI_API_KEY=your_key_here
+```
+run
+```bash
+source .env
+```
 ---
 
 ## 🐍 Setup Instructions
@@ -45,7 +54,11 @@ pip install -r requirements.txt
 You can generate the A+ content by running the following command:
 
 ```bash
-python main.py   --product-image="./product.jpg"   --logo-image="./logo.jpg"   --title="Tiny Land Triangle Climbing Frame for Kids, 3 in 1 Foldable Montessori Toy Wooden Climbing Triangle, Indoor Climbing Frame Set Wooden Climbing Toy with Ramp and Arch Climbing Triangle"   --outdir="./test2"
+python main.py   --product-image="./example/product.jpg"   --logo-image="./example/logo.jpg"   --title="Tiny Land Triangle Climbing Frame for Kids, 3 in 1 Foldable Montessori Toy Wooden Climbing Triangle, Indoor Climbing Frame Set Wooden Climbing Toy with Ramp and Arch Climbing Triangle"   --outdir="./test2"
+```
+or
+```bash
+python main.py --product-image="./example/product.jpg" --logo-image="./example/logo.jpg" --title-path="./example/title.txt" --outdir="./test"
 ```
 
 ---

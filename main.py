@@ -243,15 +243,25 @@ def generate_image(client: OpenAI, product_image_path: str, logo_image_path: str
 @click.command()
 @click.option("--product-image", "product_image", type=click.Path(exists=True, dir_okay=False, path_type=Path), required=True, help="Path to the main product image.")
 @click.option("--logo-image", "logo_image", type=click.Path(exists=True, dir_okay=False, path_type=Path), required=False, help="Path to the brand logo image (optional but recommended).")
-@click.option("--title", required=True, help="Product title as shown on Amazon.")
+@click.option("--title", required=False, help="Product title as shown on Amazon.")
+@click.option("--title-path", "title_path", type=click.Path(exists=True), required=False, help="Path to a file containing the title")
 @click.option("--model", required=False, default="gpt-4o-mini", show_default=True, help="OpenAI model with vision support.")
 @click.option("--outdir", type=click.Path(file_okay=False, path_type=Path), default=Path("."), show_default=True, help="Directory to write bullets.json and bullets.txt")
 def main(product_image: Path,
          logo_image: Optional[Path],
          title: str,
+         title_path: str,
          model: str,
          outdir: Path):
 
+    if not title and not title_path:
+        raise click.UsageError("You must provide either --title or --title-path")
+
+    if not title and title_path:
+        with open(title_path, "r", encoding="utf-8") as f:
+            title = f.read().strip()
+
+    click.echo(f"Title: {title}")
     start = time.time()
     outdir.mkdir(parents=True, exist_ok=True)
 
