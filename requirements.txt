@@ -1,0 +1,13 @@
+openai>=1.12.0
+requests>=2.31.0
+beautifulsoup4>=4.12.3
+lxml>=5.1.0
+python-slugify>=8.0.4
+pydantic>=2.8.2
+tqdm>=4.66.4 
+rich>=13.7.1
+pathlib
+slugify
+Pillow
+click
+

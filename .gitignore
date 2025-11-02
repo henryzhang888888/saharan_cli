@@ -1,0 +1,27 @@
+# 🧠 Environment Files
+.env
+
+# 🖼️ Image Assets
+*.png
+*.jpg
+*.jpeg
+
+# 🚫 Output / Generated Files
+output/
+out/
+test/
+test2/
+
+# 🐍 Python Virtual Environment
+venv/
+.env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 💻 IDE and OS Files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
