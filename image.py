@@ -4,6 +4,7 @@ import base64
 import argparse
 from PIL import Image
 from openai import OpenAI
+import time
 
 # Target Amazon A+ spec
 TARGET_W, TARGET_H = 970, 600
@@ -29,6 +30,7 @@ def save_b64_to_file(b64: str, path: str):
     with open(path, "wb") as f:
         f.write(data)
 
+# python image.py --instruction_file=./example/instruction.txt --product_image=./example/product.jpg --logo_image=./example/logo.jpg
 def main():
     parser = argparse.ArgumentParser(description="Generate 970x600 Amazon A+ module using OpenAI gpt-image-1.")
     parser.add_argument("--instruction_file", required=True, help="Path to text file containing design instructions.")
@@ -41,6 +43,7 @@ def main():
     if not args.api_key:
         raise SystemExit("❌ Missing OPENAI_API_KEY. Set it in your environment or pass --api_key.")
 
+    start = time.time()
     client = OpenAI(api_key=args.api_key)
 
     # 1️⃣ Read instruction file
@@ -87,6 +90,8 @@ Placement guidelines:
 
     print(f"✅ Saved final image: {args.out} (970x600)")
     print("📏 Generated at 1536x1024 and downscaled to exact target.")
+    end = time.time()
+    print(f"Runtime: {end - start:.4f} seconds")
 
 if __name__ == "__main__":
     main()
