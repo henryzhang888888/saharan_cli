@@ -2,9 +2,11 @@ import os
 import io
 import base64
 import argparse
+import time
+import uuid
+
 from PIL import Image
 from openai import OpenAI
-import time
 
 # Target Amazon A+ spec
 TARGET_W, TARGET_H = 970, 600
@@ -12,32 +14,32 @@ TARGET_W, TARGET_H = 970, 600
 GEN_W, GEN_H = 1536, 1024
 
 SYSTEM_MESSAGE = (
-    "Create a 970:600 px full module (strictly follow this size for the generated module, "
-    "don’t generate other sizes) for the product following the instructions below.\n"
-    "Make sure to read the instructions carefully and include all required text without missing any details.\n"
-    "Don’t change the look of the submitted logo if included."
+    "Create a premium 970x600 Amazon A+ hero module that is typography-first. "
+    "Use the provided text exactly, keep the layout modern, and emphasize clarity."
 )
-
-def make_blank_canvas_png(w: int, h: int) -> bytes:
-    """Create transparent PNG canvas for edit API."""
-    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return buf.getvalue()
 
 def save_b64_to_file(b64: str, path: str):
     data = base64.b64decode(b64)
     with open(path, "wb") as f:
         f.write(data)
 
-# python image.py --instruction_file=./example/instruction.txt --product_image=./example/product.jpg --logo_image=./example/logo.jpg
+
+def image_to_bytes(img: Image.Image, format: str = "PNG") -> bytes:
+    buf = io.BytesIO()
+    img.save(buf, format=format)
+    return buf.getvalue()
+
+# python image.py --instruction_file=./example/instruction.txt
 def main():
     parser = argparse.ArgumentParser(description="Generate 970x600 Amazon A+ module using OpenAI gpt-image-1.")
-    parser.add_argument("--instruction_file", required=True, help="Path to text file containing design instructions.")
-    parser.add_argument("--product_image", required=True, help="Path to product image (PNG/JPG).")
-    parser.add_argument("--logo_image", required=True, help="Path to logo image (PNG/JPG).")
-    parser.add_argument("--out", default="aplus_module_970x600.png", help="Output file name.")
+    parser.add_argument("--instruction_file", required=True, help="Path to text file containing design instructions or copy.")
     parser.add_argument("--api_key", default=os.getenv("OPENAI_API_KEY"), help="Your OpenAI API key.")
+    parser.add_argument(
+        "--result_dir",
+        default=None,
+        help="Directory where run artifacts (prompt, intermediate images) are stored. "
+        "Defaults to timestamped folder within ./results.",
+    )
     args = parser.parse_args()
 
     if not args.api_key:
@@ -53,42 +55,58 @@ def main():
     # 2️⃣ Build the prompt
     prompt = f"""{SYSTEM_MESSAGE}
 
-Instructions:
+Text content to include:
 {instruction_text}
 
-Placement guidelines:
-- Include both the provided PRODUCT and LOGO in the final image.
-- Keep the LOGO pristine (no visual alterations); place it cleanly (e.g., top-right).
-- Display the PRODUCT prominently (left or center-left) with space for text on the right.
-- Maintain a cohesive, premium, Montessori-inspired tone and color harmony.
-"""
+Design requirements:
+- Focus on refined typography, subtle gradients, and premium color palettes.
+- Use text as the hero element; product photography is optional but exclude logos.
+- Keep ample white space and a clear hierarchy (headline, subhead, supporting copy).
+- Ensure the overall design feels modern, calm, and brand-agnostic.
+- Maintain the 970x600 aspect ratio (generated at 1536x1024 then downscaled)."""
 
-    # 3️⃣ Blank base canvas for edit
-    base_canvas = make_blank_canvas_png(GEN_W, GEN_H)
+    # 3️⃣ Prepare result directory & save prompt
+    default_root = os.path.abspath("results")
+    os.makedirs(default_root, exist_ok=True)
 
-    # 4️⃣ Generate using supported size 1536x1024
+    run_id = time.strftime("%Y%m%d_%H%M%S")
+    if args.result_dir:
+        run_folder = os.path.abspath(args.result_dir)
+        os.makedirs(run_folder, exist_ok=True)
+    else:
+        run_folder = os.path.join(default_root, run_id)
+        while os.path.exists(run_folder):
+            run_id = f"{time.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
+            run_folder = os.path.join(default_root, run_id)
+        os.makedirs(run_folder, exist_ok=True)
+
+    prompt_path = os.path.join(run_folder, "prompt.txt")
+    with open(prompt_path, "w", encoding="utf-8") as prompt_file:
+        prompt_file.write(prompt)
+
+    # 4️⃣ Generate text-focused image directly
     print("🎨 Generating base image (1536x1024)...")
-    result = client.images.edit(
+    result = client.images.generate(
         model="gpt-image-1",
         prompt=prompt,
         size=f"{GEN_W}x{GEN_H}",
-        image=[
-            ("canvas.png", base_canvas),
-            (os.path.basename(args.product_image), open(args.product_image, "rb").read()),
-            (os.path.basename(args.logo_image), open(args.logo_image, "rb").read()),
-        ],
     )
 
-    # 5️⃣ Save and downscale to 970x600
+    # 5️⃣ Save raw output, then downscale to 970x600
     b64 = result.data[0].b64_json
-    tmp_path = "_tmp_generated.png"
-    save_b64_to_file(b64, tmp_path)
+    raw_out_path = os.path.join(run_folder, "ai_output_1536x1024.png")
+    save_b64_to_file(b64, raw_out_path)
 
-    with Image.open(tmp_path) as img:
-        final = img.resize((TARGET_W, TARGET_H), Image.LANCZOS)
-        final.save(args.out)
+    with Image.open(raw_out_path) as img:
+        ai_image = img.convert("RGBA")
+        final_resized = ai_image.resize((TARGET_W, TARGET_H), Image.LANCZOS)
+        final_out = os.path.join(run_folder, "final_output_970x600.png")
+        final_resized.save(final_out)
 
-    print(f"✅ Saved final image: {args.out} (970x600)")
+    print(f"🗂️ Result artifacts stored in: {run_folder}")
+    print(f"📝 Prompt saved to: {prompt_path}")
+    print(f"🧠 Raw AI output (1536x1024): {raw_out_path}")
+    print(f"✅ Final image (970x600): {final_out}")
     print("📏 Generated at 1536x1024 and downscaled to exact target.")
     end = time.time()
     print(f"Runtime: {end - start:.4f} seconds")

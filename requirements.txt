@@ -11,4 +11,5 @@ slugify
 Pillow
 click
 google-genai
+numpy>=1.26.0
 
